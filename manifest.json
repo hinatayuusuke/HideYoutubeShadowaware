@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube: Hide View Counts",
+  "version": "1.0.0",
+  "description": "Shadow DOMに対応し、YouTubeの再生数を非表示にします。",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://m.youtube.com/*",
+    "https://youtu.be/*"
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*",
+        "https://youtu.be/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injector.js"],
+      "matches": ["https://www.youtube.com/*"]
+    }
+  ]
+}
