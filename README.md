@@ -21,14 +21,8 @@ A Chrome extension that hides video view counts everywhere on YouTube. Free your
 
 ## Installation
 
-### 1. From the Chrome Web Store (Recommended)
 
-This is the easiest and most secure way to install. Get the extension from the official store via the link below.
-
-[**Get it on the Chrome Web Store**](https://chrome.google.com/webstore/detail/your-extension-id)
-> **Note:** Please replace `your-extension-id` with the actual ID you get after publishing to the store.
-
-### 2. Manual Installation (For Developers)
+### 1. Manual Installation (For Developers)
 
 1.  Download this repository by clicking `Code` > `Download ZIP` and unzip it.
 2.  Open your Chrome browser and navigate to `chrome://extensions`.
@@ -72,14 +66,8 @@ YouTubeのあらゆる場所から動画の再生数を非表示にするChrome�
 
 ## インストール
 
-### 1. Chromeウェブストア (推奨)
 
-以下のリンクから簡単に追加できます。ストアで公開されると、最も安全で簡単な方法です。
-
-[**Chromeウェブストアで入手する**](https://chrome.google.com/webstore/detail/your-extension-id)
-> **注:** `your-extension-id` の部分は、ストアに公開後に発行される実際のIDに置き換えてください。
-
-### 2. 手動インストール (開発者向け)
+### 1. 手動インストール (開発者向け)
 
 1.  このリポジトリの右上にある `Code` ボタンから `Download ZIP` を選択し、リポジトリをダウンロード・解凍します。
 2.  Chromeブラウザでアドレスバーに `chrome://extensions` と入力して拡張機能ページを開きます。
