@@ -7,10 +7,6 @@ A Chrome extension that hides video view counts everywhere on YouTube. Free your
 ## Key Features
 
 *   ✅ **Comprehensive Hiding**: Hides view counts on the video watch page, homepage, search results, related videos list, channel pages, and more.
-*   ✅ **Modern UI Compatible**: Designed to work with YouTube's new layout, which heavily utilizes Shadow DOM, ensuring future compatibility.
-*   ✅ **Simple On/Off Toggle**: Easily enable or disable the feature anytime from the popup by clicking the toolbar icon.
-*   ✅ **Lightweight & Fast**: Built with performance in mind to not slow down your browsing experience.
-*   ✅ **Multi-language Support**: Detects view count text in various languages (e.g., "views", "回視聴", "Aufrufe").
 
 ## Installation
 
@@ -45,10 +41,6 @@ YouTubeのあらゆる場所から動画の再生数を非表示にするChrome�
 ## 主な機能
 
 *   ✅ **徹底的な非表示**: 動画視聴ページ、ホームページ、検索結果、関連動画リスト、チャンネルページなど、YouTube上のあらゆる再生数表示を隠します。
-*   ✅ **最新のUIに対応**: YouTubeが利用するShadow DOM技術にも対応しているため、将来のUI変更にも強い設計です。
-*   ✅ **シンプルなON/OFF**: ツールバーのアイコンをクリックして表示されるポップアップから、いつでも簡単に機能の有効/無効を切り替えられます。
-*   ✅ **軽量・高速**: ページの表示速度に影響を与えないよう、パフォーマンスに配慮して設計されています。
-*   ✅ **多言語対応**: "views", "回視聴", "Aufrufe" など、様々な言語の再生数表記を検知します。
 
 ## インストール
 
