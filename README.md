@@ -1,15 +1,8 @@
 # YouTube: Hide View Counts
 
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/your-extension-id?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chrome.google.com/webstore/detail/your-extension-id)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 A Chrome extension that hides video view counts everywhere on YouTube. Free yourself from the pressure of numbers and enjoy content purely for what it is.
-
-## Screenshot
-
-![Before & After](https://user-images.githubusercontent.com/your-username/your-repo/assets/screenshot.png)
-*(Left: Before / Right: After)*
-> **Note:** Please replace the image URL above with the actual URL of your screenshot.
 
 ## Key Features
 
@@ -45,16 +38,9 @@ This project is licensed under the [MIT License](LICENSE).
 
 # YouTube: Hide View Counts
 
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/your-extension-id?style=for-the-badge)](https://chrome.google.com/webstore/detail/your-extension-id)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 YouTubeのあらゆる場所から動画の再生数を非表示にするChrome拡張機能です。「数字のプレッシャー」から解放され、純粋にコンテンツを楽しみたいあなたのために。
-
-## スクリーンショット
-
-![Before & After](https://user-images.githubusercontent.com/your-username/your-repo/assets/screenshot.png)
-*(左: 通常の表示 / 右: この拡張機能を使用した場合)*
-> **注:** 上の画像URLは実際のスクリーンショット画像のURLに置き換えてください。
 
 ## 主な機能
 
