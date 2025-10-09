@@ -1,6 +1,9 @@
 // content.js
 'use strict';
 
+// queueScan is invoked before initialization finishes; reuse existing implementation when reinjected.
+let queueScan = window.__YTHideViewsQueueScan__ || (() => {});
+
 // 1. injector.jsをページに注入
 const s = document.createElement('script');
 s.src = chrome.runtime.getURL('injector.js');
@@ -144,7 +147,7 @@ else {
     if (scopeNodes.length === 0) walk(root);
   };
   const pending = new Set();
-  const queueScan = (rootOrNode) => {
+  queueScan = (rootOrNode) => {
     pending.add(rootOrNode || document);
     scheduleFlush();
   };
@@ -169,6 +172,7 @@ else {
       setTimeout(runner, 16);
     }
   };
+  window.__YTHideViewsQueueScan__ = queueScan;
 
   new MutationObserver((muts) => {
     for (const m of muts) {
