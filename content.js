@@ -14,7 +14,7 @@ s.onload = () => s.remove();
 /*** ▼ 元のスクリプトのコアロジック（設定など）はほぼそのまま流用 ▼ ***/
 const MAX_NODES_PER_TICK = 200;
 const VIEW_PATTERNS = [
-  /\bviews?\b/i, /回視聴/, /人が視聴中/, /次观看|次觀看|觀看次數|觀看次數/i,
+  /\bviews?\b/i, /回視聴/, /人\s*(?:が\s*)?視聴中/, /次观看|次觀看|觀看次數|觀看次數/i,
   /회\s*시청/i, /visualiza(?:ção|ções)?/i, /\bvistas?\b|\breproducciones?\b|\bvisualizaciones?\b/i,
   /\bvues?\b/i, /\baufrufe\b/i, /просмотр/i, /\bviews\b/i
 ];
