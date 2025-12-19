@@ -1,7 +1,7 @@
 // content.js
 'use strict';
 
-const DEBUG = true;
+const DEBUG = false;
 const DEBUG_PREFIX = '[HideViewCounts][debug]';
 const debugLog = (...args) => {
   if (DEBUG) console.log(DEBUG_PREFIX, ...args);
@@ -32,6 +32,27 @@ if (DEBUG) {
 
 // queueScan is invoked before initialization finishes; reuse existing implementation when reinjected.
 let queueScan = window.__YTHideViewsQueueScan__ || (() => {});
+const HIDE_CSS_ID = 'yt-hide-views-style';
+const HIDE_CSS_RULES = `
+ytd-watch-info-text #view-count,
+tp-yt-paper-tooltip #tooltip {
+  display: none !important;
+}
+`;
+const ensureHideCss = () => {
+  if (!ENABLED) return;
+  let style = document.getElementById(HIDE_CSS_ID);
+  if (!style) {
+    style = document.createElement('style');
+    style.id = HIDE_CSS_ID;
+    style.textContent = HIDE_CSS_RULES;
+    (document.head || document.documentElement).appendChild(style);
+  }
+};
+const removeHideCss = () => {
+  const style = document.getElementById(HIDE_CSS_ID);
+  if (style) style.remove();
+};
 
 // 1. injector.jsをページに注入
 const s = document.createElement('script');
@@ -84,6 +105,7 @@ chrome.storage.sync.get({ enabled: true }, (data) => {
   console.log('[HideViewCounts] Initial state:', ENABLED);
   debugLog('debug enabled');
   if (ENABLED) {
+    ensureHideCss();
     queueScan(document, 'initial-enabled'); // 有効なら初期スキャン
   }
 });
@@ -95,8 +117,10 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     console.log('[HideViewCounts] State changed:', ENABLED);
     // 有効になった場合は再スキャン、無効になった場合はページをリロードして元に戻すのが手軽
     if (ENABLED) {
+        ensureHideCss();
         queueScan(document, 'enabled-changed');
     } else {
+        removeHideCss();
         window.location.reload();
     }
   }
