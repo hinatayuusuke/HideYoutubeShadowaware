@@ -1,8 +1,58 @@
 // content.js
 'use strict';
 
+const DEBUG = false;
+const DEBUG_PREFIX = '[HideViewCounts][debug]';
+const debugLog = (...args) => {
+  if (DEBUG) console.log(DEBUG_PREFIX, ...args);
+};
+const textSnippet = (text) => {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  return t.length > 160 ? `${t.slice(0, 157)}...` : t;
+};
+const nodeLabel = (node) => {
+  if (!node) return 'null';
+  if (node.nodeType === Node.DOCUMENT_NODE) return 'document';
+  if (node instanceof ShadowRoot) {
+    const hostLabel = node.host ? nodeLabel(node.host) : 'unknown-host';
+    return `shadowRoot(${hostLabel})`;
+  }
+  if (!(node instanceof Element)) return String(node.nodeName || 'node');
+  const id = node.id ? `#${node.id}` : '';
+  let cls = '';
+  if (typeof node.className === 'string' && node.className.trim()) {
+    const parts = node.className.trim().split(/\s+/).slice(0, 3);
+    cls = `.${parts.join('.')}`;
+  }
+  return `<${node.tagName.toLowerCase()}${id}${cls}>`;
+};
+if (DEBUG) {
+  document.documentElement?.setAttribute('data-yt-hide-views-debug', '1');
+}
+
 // queueScan is invoked before initialization finishes; reuse existing implementation when reinjected.
 let queueScan = window.__YTHideViewsQueueScan__ || (() => {});
+const HIDE_CSS_ID = 'yt-hide-views-style';
+const HIDE_CSS_RULES = `
+ytd-watch-info-text #view-count,
+tp-yt-paper-tooltip #tooltip {
+  display: none !important;
+}
+`;
+const ensureHideCss = () => {
+  if (!ENABLED) return;
+  let style = document.getElementById(HIDE_CSS_ID);
+  if (!style) {
+    style = document.createElement('style');
+    style.id = HIDE_CSS_ID;
+    style.textContent = HIDE_CSS_RULES;
+    (document.head || document.documentElement).appendChild(style);
+  }
+};
+const removeHideCss = () => {
+  const style = document.getElementById(HIDE_CSS_ID);
+  if (style) style.remove();
+};
 
 // 1. injector.jsをページに注入
 const s = document.createElement('script');
@@ -19,6 +69,31 @@ const VIEW_PATTERNS = [
   /\bvues?\b/i, /\baufrufe\b/i, /просмотр/i, /\bviews\b/i
 ];
 const EXTRA_BADGES = [/watching now/i];
+
+const HIDDEN_NODES = new WeakSet();
+const HIDDEN_OBSERVERS = new WeakMap();
+const observeHiddenNode = (el) => {
+  if (!DEBUG || !el || HIDDEN_OBSERVERS.has(el)) return;
+  const obs = new MutationObserver((muts) => {
+    for (const m of muts) {
+      debugLog(
+        'hidden node attribute change',
+        nodeLabel(el),
+        m.attributeName,
+        'style=',
+        el.getAttribute('style'),
+        'aria-hidden=',
+        el.getAttribute('aria-hidden')
+      );
+    }
+  });
+  try {
+    obs.observe(el, { attributes: true, attributeFilter: ['style', 'class', 'hidden', 'aria-hidden'] });
+    HIDDEN_OBSERVERS.set(el, obs);
+  } catch (e) {
+    debugLog('hidden observer attach failed', nodeLabel(el), e);
+  }
+};
 /*** ▲ ここまで流用 ▲ ***/
 
 
@@ -28,8 +103,10 @@ let ENABLED = true; // デフォルトはON
 chrome.storage.sync.get({ enabled: true }, (data) => {
   ENABLED = data.enabled;
   console.log('[HideViewCounts] Initial state:', ENABLED);
+  debugLog('debug enabled');
   if (ENABLED) {
-    queueScan(document); // 有効なら初期スキャン
+    ensureHideCss();
+    queueScan(document, 'initial-enabled'); // 有効なら初期スキャン
   }
 });
 
@@ -40,8 +117,10 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     console.log('[HideViewCounts] State changed:', ENABLED);
     // 有効になった場合は再スキャン、無効になった場合はページをリロードして元に戻すのが手軽
     if (ENABLED) {
-        queueScan(document);
+        ensureHideCss();
+        queueScan(document, 'enabled-changed');
     } else {
+        removeHideCss();
         window.location.reload();
     }
   }
@@ -56,7 +135,8 @@ else {
   // injector.jsが発火するカスタムイベントをリッスン
   window.addEventListener('__yt_hide_views_new_shadow_root', (e) => {
     if (e.detail && e.detail.root) {
-      queueScan(e.detail.root);
+      debugLog('new shadow root event', nodeLabel(e.detail.root));
+      queueScan(e.detail.root, 'new-shadow-root');
     }
   });
 
@@ -73,21 +153,29 @@ else {
   // 以下に元のスクリプトから必要な関数をコピー＆ペーストします
   // ※ Element.prototype.attachShadow の書き換え部分は削除してください
   const scanExistingOpenShadows = () => {
-    forEachElementWithShadowRoot(document, (el) => queueScan(el.shadowRoot));
+    forEachElementWithShadowRoot(document, (el) => queueScan(el.shadowRoot, 'existing-shadow-root'));
   };
   const TARGET_CONTAINERS = [
     'ytd-watch-metadata', '#info', 'ytd-video-meta-block', 'ytd-rich-item-renderer',
     'ytd-grid-video-renderer', 'ytd-compact-video-renderer', 'ytd-reel-video-renderer',
     'ytd-reel-player-overlay-renderer'
   ];
+  const TARGET_CONTAINER_SELECTOR = TARGET_CONTAINERS.join(', ');
   const CANDIDATE_SELECTORS = [
     'yt-formatted-string', '#metadata-line span', '.inline-metadata-item',
     '.metadata-stats span', 'span'
   ];
+  const CANDIDATE_SELECTOR = CANDIDATE_SELECTORS.join(', ');
   const PROCESSED = new WeakSet();
-  const hideNode = (el) => {
+  const hideNode = (el, info) => {
     el.style.setProperty('display', 'none', 'important');
     el.setAttribute('aria-hidden', 'true');
+    HIDDEN_NODES.add(el);
+    if (DEBUG) {
+      el.setAttribute('data-yt-hide-views', '1');
+      debugLog('hide', nodeLabel(el), 'wasHidden=', !!info?.wasHidden, 'text=', textSnippet(info?.text || el.textContent));
+      observeHiddenNode(el);
+    }
   };
   const looksLikeViewCount = (text) => {
     if (!text) return false;
@@ -99,6 +187,7 @@ else {
   };
   const scanRoot = (root) => {
     if (!ENABLED || !root) return;
+    debugLog('scanRoot', nodeLabel(root));
     let processedCount = 0;
     const scopeNodes = [];
     if (root.querySelectorAll) {
@@ -109,7 +198,15 @@ else {
       } catch {}
     }
     const consider = (node) => {
-      if (!node || PROCESSED.has(node)) return;
+      if (!node || PROCESSED.has(node)) {
+        if (DEBUG && node instanceof Element && !HIDDEN_NODES.has(node)) {
+          const t = (node.textContent || '').trim();
+          if (t && looksLikeViewCount(t)) {
+            debugLog('processed node now matches view count (skipped)', nodeLabel(node), 'text=', textSnippet(t));
+          }
+        }
+        return;
+      }
       PROCESSED.add(node);
       if (node.closest('ytd-thumbnail, a#thumbnail, yt-img-shadow, img') ||
           node.querySelector?.('ytd-thumbnail, a#thumbnail, yt-img-shadow, img')) {
@@ -118,14 +215,15 @@ else {
       const t = (node.textContent || '').trim();
       if (!t || !looksLikeViewCount(t)) return;
       let target = null;
-      if (node.matches?.('#metadata-line span, .inline-metadata-item, .metadata-stats span, yt-formatted-string, span')) {
+      if (node.matches?.(CANDIDATE_SELECTOR)) {
         target = node;
       } else {
-        target = node.querySelector?.('#metadata-line span, .inline-metadata-item, .metadata-stats span, yt-formatted-string, span') || null;
+        target = node.querySelector?.(CANDIDATE_SELECTOR) || null;
       }
       if (!target) return;
       if (target.closest('ytd-thumbnail, a#thumbnail, yt-img-shadow, img')) return;
-      hideNode(target);
+      const wasHidden = HIDDEN_NODES.has(target) || target.getAttribute('aria-hidden') === 'true' || target.style?.display === 'none';
+      hideNode(target, { wasHidden, text: t });
     };
     const walk = (ctx) => {
       for (const sel of CANDIDATE_SELECTORS) {
@@ -147,8 +245,11 @@ else {
     if (scopeNodes.length === 0) walk(root);
   };
   const pending = new Set();
-  queueScan = (rootOrNode) => {
+  queueScan = (rootOrNode, reason) => {
     pending.add(rootOrNode || document);
+    if (DEBUG) {
+      debugLog('queueScan', nodeLabel(rootOrNode || document), reason ? `reason=${reason}` : 'reason=none');
+    }
     scheduleFlush();
   };
   let flushScheduled = false;
@@ -159,6 +260,9 @@ else {
       flushScheduled = false;
       const items = Array.from(pending);
       pending.clear();
+      if (DEBUG) {
+        debugLog('flush', 'items=', items.length);
+      }
       for (const node of items) {
         const root = node.nodeType === Node.DOCUMENT_NODE ? node : (node.shadowRoot || node);
         scanRoot(root || document);
@@ -176,15 +280,40 @@ else {
 
   new MutationObserver((muts) => {
     for (const m of muts) {
-      for (const n of m.addedNodes) {
-        if (!(n instanceof Element)) continue;
-        queueScan(n);
-        if (n.shadowRoot) queueScan(n.shadowRoot);
+      if (m.type === 'childList') {
+        for (const n of m.addedNodes) {
+          if (!(n instanceof Element)) continue;
+          queueScan(n, 'mutation-added');
+          if (n.shadowRoot) queueScan(n.shadowRoot, 'mutation-added-shadow');
+        }
+        if (DEBUG) {
+          for (const n of m.removedNodes) {
+            if (!(n instanceof Element)) continue;
+            if (n.matches?.('[data-yt-hide-views="1"]') || n.querySelector?.('[data-yt-hide-views="1"]')) {
+              debugLog('hidden node removed', nodeLabel(n));
+            }
+          }
+        }
+      } else if (m.type === 'characterData' && DEBUG) {
+        const parent = m.target?.parentElement;
+        if (!parent) continue;
+        if (TARGET_CONTAINER_SELECTOR && !parent.closest?.(TARGET_CONTAINER_SELECTOR)) continue;
+        const t = (parent.textContent || '').trim();
+        if (t && looksLikeViewCount(t) && !HIDDEN_NODES.has(parent)) {
+          debugLog(
+            'text mutation now matches view count',
+            nodeLabel(parent),
+            'processed=',
+            PROCESSED.has(parent),
+            'text=',
+            textSnippet(t)
+          );
+        }
       }
     }
-  }).observe(document.documentElement, { subtree: true, childList: true });
+  }).observe(document.documentElement, { subtree: true, childList: true, characterData: DEBUG });
 
-  queueScan(document);
+  queueScan(document, 'startup');
   scanExistingOpenShadows();
 
   function forEachElementWithShadowRoot(root, cb) {
